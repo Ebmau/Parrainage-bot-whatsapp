@@ -1,23 +1,40 @@
 {
-  "name": "parrainage-bot-whatsapp",
-  "version": "1.0.0",
-  "description": "Générateur de codes de couplage WhatsApp pour bots - Interface moderne et sécurisée.",
+  "name": "ebmau-whatsapp-bot",
+  "version": "2.0.0",
+  "description": "Générateur de codes de pairing WhatsApp pour bots - Interface moderne et sécurisée hébergée sur Render",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [
     "whatsapp-bot",
     "pairing-code",
     "baileys",
-    "nodejs"
+    "nodejs",
+    "render",
+    "ebmau",
+    "express"
   ],
   "author": "Ebmau",
   "license": "GPL-3.0",
   "dependencies": {
-    "@adiwajshing/baileys": "6.5.0",
+    "baileys": "^6.6.0",
     "express": "^4.18.2",
     "pino": "^8.16.1",
     "qrcode": "^1.5.3"
-  }
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/[votre-nom]/Bot-whatsapp.git"
+  },
+  "homepage": "https://[votre-app].onrender.com"
 }
