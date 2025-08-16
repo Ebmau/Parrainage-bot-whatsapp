@@ -80,7 +80,7 @@ function validatePhoneNumber(phoneNumber) {
     if (phoneNumber.length > 0 && !isValid) {
         phoneInput.classList.add('error');
         errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Format invalide. Exemple: +33123456789';
+        errorMessage.textContent = 'Format invalide. Exemple: +243123456789';
         return false;
     } else {
         phoneInput.classList.remove('error');
@@ -191,7 +191,7 @@ async function generatePairCode() {
             
             let errorMessage = 'Erreur de connexion au serveur';
             if (error.message.includes('429')) {
-                errorMessage = 'Trop de tentatives. Attendez 1 minute.';
+                errorMessage = 'Trop de tentatives. Attendez 30 secondes.';
             } else if (error.message.includes('400')) {
                 errorMessage = 'Numéro de téléphone invalide';
             }
@@ -258,7 +258,9 @@ async function checkBotStatus() {
         statusDiv.className = 'bot-status';
         statusDiv.innerHTML = data.connected 
             ? `🟢 Bot connecté: ${data.botInfo?.name || 'Ebmau Bot'}`
-            : '🔴 Bot en attente de connexion';
+            : data.connecting 
+                ? '🟡 Bot en cours de connexion...'
+                : '🔴 Bot en attente de connexion';
             
         // Insérer après les stats
         const stats = document.querySelector('.stats');
