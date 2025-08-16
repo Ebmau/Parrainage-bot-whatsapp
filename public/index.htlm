@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ebmau Bot - Générateur de codes de pairing pour connecter votre bot WhatsApp Business. Interface moderne et sécurisée.">
+    <meta name="keywords" content="WhatsApp Bot, Pairing Code, Bot WhatsApp, API WhatsApp, Ebmau">
+    <meta name="author" content="Ebmau">
+    <meta property="og:title" content="Ebmau Bot - Connexion WhatsApp">
+    <meta property="og:description" content="Connectez facilement votre bot à WhatsApp avec notre générateur de codes de pairing">
+    <meta property="og:type" content="website">
+    <meta name="robots" content="index, follow">
+    
+    <title>Ebmau Bot - Générateur Code WhatsApp</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#25D366">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Ebmau Bot">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #25D366;
+            --secondary-color: #128C7E;
+            --accent-color: #075E54;
+            --text-dark: #333;
+            --text-light: #666;
+            --text-muted: #888;
+            --bg-light: #f8f9fa;
+            --border-color: #e0e0e0;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 25px 50px rgba(0, 0, 0, 0.15);
+            --border-radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px 30px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .container:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 45px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3);
+            transition: var(--transition);
+        }
+
+        .logo:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        h1 {
+            color: var(--text-dark);
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .inspiration {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-style: italic;
+            margin-bottom: 30px;
+            padding: 10px;
+            background: rgba(37, 211, 102, 0.1);
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .input-label {
+            display: block;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .phone-input {
+            width: 100%;
+            padding: 18px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            background: var(--bg-light);
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .phone-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+
+        .phone-input.error {
+            border-color: var(--danger-color);
+            background: rgba(220, 53, 69, 0.05);
+        }
+
+        .error-message {
+            color: var(--danger-color);
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover:before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(37, 211, 102, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 15px 35px rgba(108, 117, 125, 0.4);
+        }
+
+        .code-display {
+            background: linear-gradient(135deg, var(--bg-light) 0%, #ffffff 100%);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 25px 20px;
+            margin: 25px 0;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', Monaco, monospace;
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-dark);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .code-display.has-code {
+            border-color: var(--success-color);
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+            color: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(37, 211, 102, 0.2);
+            border-radius: 2px;
+            margin: 15px 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .footer {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .version {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+            color: var(--success-color);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 15px 0;
+            border-left: 4px solid var(--success-color);
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 28px;
+            }
+            
+            .logo {
+                width: 80px;
+                height: 80px;
+                font-size: 35px;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .container {
+                background: rgba(30, 30, 30, 0.95);
+                color: #ffffff;
+            }
+            
+            h1, .input-label {
+                color: #ffffff;
+            }
+            
+            .subtitle {
+                color: #cccccc;
+            }
+        }
+
+        /* Animations d'entrée */
+        .container {
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo" id="logo">🤖</div>
+        <h1>Ebmau Bot</h1>
+        <p class="subtitle">Connectez votre bot WhatsApp</p>
+        <p class="inspiration">✨ Inspiré du @Hacker21</p>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number" id="totalCodes">0</div>
+                <div class="stat-label">Codes générés</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="successRate">100%</div>
+                <div class="stat-label">Taux de réussite</div>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label class="input-label" for="phoneNumber">
+                📱 Numéro WhatsApp pour votre bot (avec indicatif pays)
+            </label>
+            <input 
+                type="tel" 
+                class="phone-input" 
+                id="phoneNumber" 
+                placeholder="+243xxxxxxxxx"
+                maxlength="15"
+                autocomplete="tel"
+            >
+            <div class="error-message" id="errorMessage">Format invalide</div>
+        </div>
+        
+        <button class="btn" id="generateBtn">
+            🤖 Générer le code de connexion bot
+        </button>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="code-display" id="codeDisplay">
+            Le code de connexion de votre bot apparaîtra ici
+        </div>
+        
+        <button class="btn btn-secondary hidden" id="copyBtn">
+            📋 Copier le code
+        </button>
+        
+        <div class="footer">
+            <div>© 2025 Ebmau | Ebmau Bot</div>
+            <div class="version">Version 2.0 - Hébergé sur Render</div>
+        </div>
+    </div>
+    
+    <script src="pair.js"></script>
+</body>
+</html>
