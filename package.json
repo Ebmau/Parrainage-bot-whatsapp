@@ -1,0 +1,23 @@
+{
+  "name": "parrainage-bot-whatsapp",
+  "version": "1.0.0",
+  "description": "Générateur de codes de couplage WhatsApp pour bots - Interface moderne et sécurisée.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "whatsapp-bot",
+    "pairing-code",
+    "baileys",
+    "nodejs"
+  ],
+  "author": "Ebmau",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "@adiwajshing/baileys": "6.5.0",
+    "express": "^4.18.2",
+    "pino": "^8.16.1",
+    "qrcode": "^1.5.3"
+  }
+}
