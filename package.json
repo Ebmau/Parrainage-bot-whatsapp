@@ -1,12 +1,13 @@
 {
   "name": "ebmau-whatsapp-bot",
   "version": "2.0.0",
-  "description": "Générateur de codes de pairing WhatsApp pour bots - Interface moderne et sécurisée hébergée sur Render",
+  "description": "Générateur de codes de pairing WhatsApp pour bots - Interface moderne et sécurisée",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "build": "npm install",
+    "clean": "rm -rf node_modules package-lock.json && npm install"
   },
   "keywords": [
     "whatsapp-bot",
@@ -20,13 +21,14 @@
   "author": "Ebmau",
   "license": "GPL-3.0",
   "dependencies": {
-    "baileys": "^6.6.0",
+    "@whiskeysockets/baileys": "^6.7.8",
     "express": "^4.18.2",
-    "pino": "^8.16.1",
-    "qrcode": "^1.5.3"
+    "pino": "^8.19.0",
+    "qrcode-terminal": "^0.12.0",
+    "node-cache": "^5.1.2"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.3"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -35,6 +37,5 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/[votre-nom]/Bot-whatsapp.git"
-  },
-  "homepage": "https://[votre-app].onrender.com"
+  }
 }
