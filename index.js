@@ -18,7 +18,8 @@ const pairingCodeCache = new NodeCache({ stdTTL: 300 }); // 5 minutes
 
 // Middleware
 app.use(express.json());
-app.use(express.static('public'));
+// 🔧 Correction : pointer vers src/public
+app.use(express.static(path.join(__dirname, 'src/public')));
 
 // Variables globales
 let globalSock = null;
@@ -31,8 +32,9 @@ const logger = pino({
 });
 
 // Route pour servir l'index.html
+// 🔧 Correction : pointer vers src/public
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'src/public', 'index.html'));
 });
 
 // Route pour générer un nouveau code de pairing
@@ -40,7 +42,6 @@ app.post('/generate-pairing-code', async (req, res) => {
     try {
         const { phoneNumber } = req.body;
         
-        // Validation du numéro
         if (!phoneNumber || !phoneNumber.match(/^\+[1-9]\d{1,14}$/)) {
             return res.status(400).json({ 
                 success: false,
@@ -48,7 +49,6 @@ app.post('/generate-pairing-code', async (req, res) => {
             });
         }
 
-        // Protection anti-spam (30 secondes entre les requêtes)
         const now = Date.now();
         if (now - lastPairingRequest < 30000) {
             const waitTime = Math.ceil((30000 - (now - lastPairingRequest)) / 1000);
@@ -58,7 +58,6 @@ app.post('/generate-pairing-code', async (req, res) => {
             });
         }
 
-        // Vérifier si un code existe déjà pour ce numéro
         const existingCode = pairingCodeCache.get(phoneNumber);
         if (existingCode) {
             return res.json({
@@ -81,16 +80,13 @@ app.post('/generate-pairing-code', async (req, res) => {
 
         console.log(`🔄 Génération d'un code de pairing pour: ${phoneNumber}`);
 
-        // Nettoyer le numéro (garder seulement les chiffres)
         const cleanNumber = phoneNumber.replace(/[^\d]/g, '');
 
-        // Créer le dossier auth si nécessaire
         const authDir = path.join(__dirname, 'auth_info_baileys');
         if (!fs.existsSync(authDir)) {
             fs.mkdirSync(authDir, { recursive: true });
         }
 
-        // Créer l'état d'authentification
         const { state, saveCreds } = await useMultiFileAuthState(authDir);
         
         const sock = makeWASocket({
@@ -106,19 +102,16 @@ app.post('/generate-pairing-code', async (req, res) => {
         let pairingCode = null;
         let connectionTimeout;
 
-        // Timeout de sécurité
         connectionTimeout = setTimeout(() => {
             console.log('⏰ Timeout de connexion');
             sock.end();
             isConnecting = false;
-        }, 60000); // 1 minute
+        }, 60000);
 
-        // Événement pour sauvegarder les credentials
         sock.ev.on('creds.update', saveCreds);
 
-        // Gestion des mises à jour de connexion
         sock.ev.on('connection.update', async (update) => {
-            const { connection, lastDisconnect, qr } = update;
+            const { connection, lastDisconnect } = update;
             
             console.log('📡 État de connexion:', connection);
 
@@ -128,7 +121,6 @@ app.post('/generate-pairing-code', async (req, res) => {
                 console.log('🔌 Connexion fermée. Reconnexion requise:', shouldReconnect);
                 
                 if (shouldReconnect && !pairingCode) {
-                    // Retry après une courte pause
                     setTimeout(() => {
                         isConnecting = false;
                     }, 5000);
@@ -143,7 +135,6 @@ app.post('/generate-pairing-code', async (req, res) => {
                 isConnecting = false;
                 setupBotCommands(sock);
                 
-                // Garder la connexion active
                 setInterval(() => {
                     if (sock && !sock.isOnline) {
                         sock.connect();
@@ -152,7 +143,6 @@ app.post('/generate-pairing-code', async (req, res) => {
             }
         });
 
-        // Demander le code de pairing si pas encore enregistré
         if (!state.creds.registered) {
             console.log('📱 Demande de code de pairing...');
             
@@ -160,7 +150,6 @@ app.post('/generate-pairing-code', async (req, res) => {
                 pairingCode = await sock.requestPairingCode(cleanNumber);
                 
                 if (pairingCode) {
-                    // Stocker le code dans le cache
                     pairingCodeCache.set(phoneNumber, pairingCode);
                     
                     console.log(`✅ Code généré: ${pairingCode} pour ${phoneNumber}`);
@@ -173,7 +162,7 @@ app.post('/generate-pairing-code', async (req, res) => {
                         code: pairingCode,
                         message: 'Code généré avec succès',
                         phoneNumber: phoneNumber,
-                        expiresIn: 300 // 5 minutes
+                        expiresIn: 300
                     });
                 }
             } catch (error) {
@@ -206,7 +195,6 @@ app.post('/generate-pairing-code', async (req, res) => {
     }
 });
 
-// Route pour obtenir un code existant
 app.get('/pairing-code/:phoneNumber', (req, res) => {
     const { phoneNumber } = req.params;
     const code = pairingCodeCache.get(phoneNumber);
@@ -225,7 +213,6 @@ app.get('/pairing-code/:phoneNumber', (req, res) => {
     }
 });
 
-// Route pour vérifier l'état du bot
 app.get('/bot-status', (req, res) => {
     const isConnected = globalSock && globalSock.user;
     res.json({
@@ -240,7 +227,6 @@ app.get('/bot-status', (req, res) => {
     });
 });
 
-// Configuration des commandes du bot
 function setupBotCommands(sock) {
     sock.ev.on('messages.upsert', async ({ messages }) => {
         try {
@@ -256,7 +242,6 @@ function setupBotCommands(sock) {
 
             console.log(`📨 Commande reçue de ${senderName}: ${msgText}`);
 
-            // Commandes disponibles
             const commands = {
                 '!menu': () => {
                     return `🤖 *Ebmau Bot - Menu Principal*\n\n` +
@@ -336,7 +321,6 @@ function setupBotCommands(sock) {
     });
 }
 
-// Route de health check pour Render
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
@@ -350,7 +334,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Gestion des erreurs
 app.use((error, req, res, next) => {
     console.error('❌ Erreur serveur:', error);
     res.status(500).json({ 
@@ -360,7 +343,6 @@ app.use((error, req, res, next) => {
     });
 });
 
-// Gestion des routes non trouvées
 app.use('*', (req, res) => {
     res.status(404).json({ 
         success: false, 
@@ -368,7 +350,6 @@ app.use('*', (req, res) => {
     });
 });
 
-// Démarrage du serveur
 const server = app.listen(port, () => {
     console.log(`🚀 Serveur Ebmau Bot démarré sur le port ${port}`);
     console.log(`🌐 Interface accessible sur: http://localhost:${port}`);
@@ -376,7 +357,6 @@ const server = app.listen(port, () => {
     console.log(`🔧 Environnement: ${process.env.NODE_ENV || 'development'}`);
 });
 
-// Gestion propre de l'arrêt
 const gracefulShutdown = (signal) => {
     console.log(`\n🔄 Signal ${signal} reçu. Arrêt en cours...`);
     
@@ -392,7 +372,6 @@ const gracefulShutdown = (signal) => {
         process.exit(0);
     });
     
-    // Forcer l'arrêt après 10 secondes
     setTimeout(() => {
         console.log('⚠️ Arrêt forcé après timeout');
         process.exit(1);
@@ -402,7 +381,6 @@ const gracefulShutdown = (signal) => {
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-// Gestion des erreurs non capturées
 process.on('uncaughtException', (error) => {
     console.error('❌ Exception non capturée:', error);
     process.exit(1);
