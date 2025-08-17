@@ -1,4 +1,4 @@
-// Variables globales
+ // Variables globales
 let generatedCode = '';
 let totalCodesGenerated = parseInt(localStorage.getItem('totalCodes') || '0');
 let isGenerating = false;
