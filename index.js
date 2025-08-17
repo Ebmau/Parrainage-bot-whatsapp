@@ -18,7 +18,7 @@ const pairingCodeCache = new NodeCache({ stdTTL: 300 }); // 5 minutes
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 // Variables globales
 let globalSock = null;
