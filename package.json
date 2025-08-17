@@ -1,41 +1,23 @@
 {
-  "name": "ebmau-whatsapp-bot",
-  "version": "2.0.0",
-  "description": "Générateur de codes de pairing WhatsApp pour bots - Interface moderne et sécurisée",
+  "name": "ebmau-bot",
+  "version": "1.0.0",
+  "description": "Ebmau WhatsApp Bot basé sur Baileys et Express",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "build": "npm install",
-    "clean": "rm -rf node_modules package-lock.json && npm install"
+    "dev": "nodemon index.js"
   },
-  "keywords": [
-    "whatsapp-bot",
-    "pairing-code",
-    "baileys",
-    "nodejs",
-    "render",
-    "ebmau",
-    "express"
-  ],
-  "author": "Ebmau",
-  "license": "GPL-3.0",
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.8",
-    "express": "^4.18.2",
-    "pino": "^8.19.0",
-    "qrcode-terminal": "^0.12.0",
-    "node-cache": "^5.1.2"
+    "@whiskeysockets/baileys": "^6.7.7",
+    "express": "^4.19.2",
+    "node-cache": "^5.1.2",
+    "pino": "^9.5.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.3"
+    "nodemon": "^3.1.0"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": "18.x"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/[votre-nom]/Bot-whatsapp.git"
-  }
+  "license": "MIT"
 }
