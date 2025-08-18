@@ -74,6 +74,8 @@ function validatePhoneNumber(phoneNumber) {
     const phoneInput = document.getElementById('phoneNumber');
     const errorMessage = document.getElementById('errorMessage');
     
+    if (!errorMessage) return true;
+    
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
     const isValid = phoneRegex.test(phoneNumber);
     
@@ -123,7 +125,8 @@ async function generatePairCode() {
     lastGeneration = now;
     generateBtn.disabled = true;
     generateBtn.innerHTML = '<div class="loading"></div> Génération en cours...';
-    copyBtn.classList.add('hidden');
+    
+    if (copyBtn) copyBtn.classList.add('hidden');
     
     if (progressBar) {
         progressBar.style.display = 'block';
@@ -132,7 +135,7 @@ async function generatePairCode() {
         const progressInterval = setInterval(() => {
             progress += Math.random() * 10;
             if (progress > 85) progress = 85;
-            progressFill.style.width = progress + '%';
+            if (progressFill) progressFill.style.width = progress + '%';
         }, 150);
         
         // Étapes de génération avec le serveur
@@ -141,6 +144,9 @@ async function generatePairCode() {
         try {
             await sleep(500);
             codeDisplay.innerHTML = '<div class="loading"></div> Initialisation du bot...';
+            
+            await sleep(800);
+            codeDisplay.innerHTML = '<div class="loading"></div> Génération du code sécurisé...';
             
             // Appel API vers le serveur
             const response = await fetch('/generate-pairing-code', {
@@ -155,15 +161,15 @@ async function generatePairCode() {
             
             // Finalisation de la barre de progression
             clearInterval(progressInterval);
-            progressFill.style.width = '100%';
+            if (progressFill) progressFill.style.width = '100%';
             
-            if (data.success) {
+            if (data.success && data.code) {
                 generatedCode = data.code;
                 
                 setTimeout(() => {
                     codeDisplay.textContent = generatedCode;
                     codeDisplay.classList.add('has-code');
-                    copyBtn.classList.remove('hidden');
+                    if (copyBtn) copyBtn.classList.remove('hidden');
                     
                     // Mise à jour des statistiques
                     totalCodesGenerated++;
@@ -175,8 +181,8 @@ async function generatePairCode() {
                     generateBtn.innerHTML = '🤖 Générer un nouveau code';
                     
                     setTimeout(() => {
-                        progressBar.style.display = 'none';
-                        progressFill.style.width = '0%';
+                        if (progressBar) progressBar.style.display = 'none';
+                        if (progressFill) progressFill.style.width = '0%';
                     }, 1000);
                     
                 }, 800);
@@ -194,6 +200,8 @@ async function generatePairCode() {
                 errorMessage = 'Trop de tentatives. Attendez 30 secondes.';
             } else if (error.message.includes('400')) {
                 errorMessage = 'Numéro de téléphone invalide';
+            } else if (error.message.includes('503')) {
+                errorMessage = 'Service temporairement indisponible';
             }
             
             codeDisplay.innerHTML = `❌ ${errorMessage}`;
@@ -201,8 +209,8 @@ async function generatePairCode() {
             showError(errorMessage);
             
             setTimeout(() => {
-                progressBar.style.display = 'none';
-                progressFill.style.width = '0%';
+                if (progressBar) progressBar.style.display = 'none';
+                if (progressFill) progressFill.style.width = '0%';
             }, 1000);
         } finally {
             generateBtn.disabled = false;
@@ -218,6 +226,8 @@ async function copyCode() {
     }
     
     const copyBtn = document.getElementById('copyBtn');
+    if (!copyBtn) return;
+    
     const originalText = copyBtn.innerHTML;
     
     try {
@@ -253,7 +263,14 @@ async function checkBotStatus() {
         const response = await fetch('/bot-status');
         const data = await response.json();
         
+        console.log('Bot status:', data);
+        
         // Afficher l'état de connexion du bot
+        const existingStatus = document.querySelector('.bot-status');
+        if (existingStatus) {
+            existingStatus.remove();
+        }
+        
         const statusDiv = document.createElement('div');
         statusDiv.className = 'bot-status';
         statusDiv.innerHTML = data.connected 
@@ -264,11 +281,11 @@ async function checkBotStatus() {
             
         // Insérer après les stats
         const stats = document.querySelector('.stats');
-        if (stats && !document.querySelector('.bot-status')) {
+        if (stats) {
             stats.insertAdjacentElement('afterend', statusDiv);
         }
     } catch (error) {
-        console.log('Impossible de vérifier le statut du bot');
+        console.log('Impossible de vérifier le statut du bot:', error);
     }
 }
 
@@ -320,6 +337,8 @@ function showError(message) {
         box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
         z-index: 1000;
         animation: slideInRight 0.3s ease;
+        max-width: 300px;
+        word-wrap: break-word;
     `;
     
     document.body.appendChild(errorDiv);
@@ -331,11 +350,18 @@ function showError(message) {
                 errorDiv.parentNode.removeChild(errorDiv);
             }
         }, 300);
-    }, 4000);
+    }, 5000);
 }
 
 function showSuccess(message) {
     const container = document.querySelector('.container');
+    if (!container) return;
+    
+    const existingSuccess = document.querySelector('.success-message');
+    if (existingSuccess) {
+        existingSuccess.remove();
+    }
+    
     const successDiv = document.createElement('div');
     successDiv.className = 'success-message';
     successDiv.innerHTML = '✅ ' + message;
@@ -346,7 +372,7 @@ function showSuccess(message) {
         if (successDiv.parentNode) {
             successDiv.parentNode.removeChild(successDiv);
         }
-    }, 5000);
+    }, 6000);
 }
 
 function sleep(ms) {
@@ -374,7 +400,7 @@ style.textContent = `
         font-size: 14px;
         font-weight: 500;
         background: rgba(255, 255, 255, 0.8);
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--border-color, #e0e0e0);
     }
     
     .loading {
@@ -382,15 +408,35 @@ style.textContent = `
         width: 20px;
         height: 20px;
         border: 2px solid rgba(37, 211, 102, 0.3);
-        border-top: 2px solid var(--primary-color);
+        border-top: 2px solid var(--primary-color, #25D366);
         border-radius: 50%;
         animation: spin 1s linear infinite;
         margin-right: 8px;
+        vertical-align: middle;
     }
     
     @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+    
+    .success-message {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+        color: var(--success-color, #28a745);
+        padding: 15px;
+        border-radius: 12px;
+        margin: 15px 0;
+        border-left: 4px solid var(--success-color, #28a745);
+        animation: slideIn 0.5s ease;
+        font-size: 14px;
+    }
+    
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 `;
 document.head.appendChild(style);
+
+// Debug: Log quand le script se charge
+console.log('🚀 Ebmau Bot - Script JavaScript chargé avec succès!');
