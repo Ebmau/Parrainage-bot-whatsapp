@@ -16,6 +16,9 @@ const port = process.env.PORT || 3000;
 // Cache pour stocker les codes temporairement
 const pairingCodeCache = new NodeCache({ stdTTL: 300 }); // 5 minutes
 
+// Stockage temporaire des relations de parrainage (à remplacer par une BDD en prod)
+const referralRelations = [];
+
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'src/public')));
@@ -207,6 +210,30 @@ app.get('/bot-status', (req, res) => {
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
     });
+});
+
+// ==========================
+// API Parrainage
+// ==========================
+app.post('/api/parrainage', (req, res) => {
+    const { parrain, filleul } = req.body;
+
+    if (!parrain || !filleul) {
+        return res.status(400).json({ success: false, error: 'Parrain ou filleul manquant.' });
+    }
+
+    // Vérifie si déjà enregistré
+    const alreadyExists = referralRelations.find(r => r.parrain === parrain && r.filleul === filleul);
+    if (alreadyExists) {
+        return res.json({ success: false, error: 'Déjà parrainé.' });
+    }
+
+    referralRelations.push({ parrain, filleul, date: new Date().toISOString() });
+
+    // Pour debug, affiche la liste
+    console.log('🧑‍🤝‍🧑 Nouvelle relation de parrainage:', referralRelations);
+
+    res.json({ success: true, message: 'Parrainage enregistré.', relation: { parrain, filleul } });
 });
 
 // Commandes bot
