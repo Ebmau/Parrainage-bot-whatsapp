@@ -18,7 +18,6 @@ const pairingCodeCache = new NodeCache({ stdTTL: 300 }); // 5 minutes
 
 // Middleware
 app.use(express.json());
-// 🔧 Correction : pointer vers src/public
 app.use(express.static(path.join(__dirname, 'src/public')));
 
 // Variables globales
@@ -26,18 +25,17 @@ let globalSock = null;
 let isConnecting = false;
 let lastPairingRequest = 0;
 
-// Logger silencieux pour éviter le spam
+// Logger silencieux
 const logger = pino({ 
     level: process.env.NODE_ENV === 'production' ? 'silent' : 'info' 
 });
 
-// Route pour servir l'index.html
-// 🔧 Correction : pointer vers src/public
+// Route principale
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'src/public', 'index.html'));
 });
 
-// Route pour générer un nouveau code de pairing
+// Génération d’un code de pairing
 app.post('/generate-pairing-code', async (req, res) => {
     try {
         const { phoneNumber } = req.body;
@@ -45,7 +43,7 @@ app.post('/generate-pairing-code', async (req, res) => {
         if (!phoneNumber || !phoneNumber.match(/^\+[1-9]\d{1,14}$/)) {
             return res.status(400).json({ 
                 success: false,
-                error: 'Numéro de téléphone invalide. Format requis: +243123456789' 
+                error: 'Numéro de téléphone invalide. Exemple: +243123456789' 
             });
         }
 
@@ -64,7 +62,7 @@ app.post('/generate-pairing-code', async (req, res) => {
                 success: true,
                 code: existingCode,
                 message: 'Code existant récupéré',
-                phoneNumber: phoneNumber
+                phoneNumber
             });
         }
 
@@ -81,7 +79,6 @@ app.post('/generate-pairing-code', async (req, res) => {
         console.log(`🔄 Génération d'un code de pairing pour: ${phoneNumber}`);
 
         const cleanNumber = phoneNumber.replace(/[^\d]/g, '');
-
         const authDir = path.join(__dirname, 'auth_info_baileys');
         if (!fs.existsSync(authDir)) {
             fs.mkdirSync(authDir, { recursive: true });
@@ -90,7 +87,7 @@ app.post('/generate-pairing-code', async (req, res) => {
         const { state, saveCreds } = await useMultiFileAuthState(authDir);
         
         const sock = makeWASocket({
-            logger: logger,
+            logger,
             printQRInTerminal: false,
             browser: Browsers.ubuntu('Chrome'),
             auth: state,
@@ -100,9 +97,7 @@ app.post('/generate-pairing-code', async (req, res) => {
         });
 
         let pairingCode = null;
-        let connectionTimeout;
-
-        connectionTimeout = setTimeout(() => {
+        let connectionTimeout = setTimeout(() => {
             console.log('⏰ Timeout de connexion');
             sock.end();
             isConnecting = false;
@@ -110,23 +105,15 @@ app.post('/generate-pairing-code', async (req, res) => {
 
         sock.ev.on('creds.update', saveCreds);
 
-        sock.ev.on('connection.update', async (update) => {
+        sock.ev.on('connection.update', (update) => {
             const { connection, lastDisconnect } = update;
-            
             console.log('📡 État de connexion:', connection);
 
             if (connection === 'close') {
                 clearTimeout(connectionTimeout);
                 const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
                 console.log('🔌 Connexion fermée. Reconnexion requise:', shouldReconnect);
-                
-                if (shouldReconnect && !pairingCode) {
-                    setTimeout(() => {
-                        isConnecting = false;
-                    }, 5000);
-                } else {
-                    isConnecting = false;
-                }
+                isConnecting = false;
             } 
             else if (connection === 'open') {
                 clearTimeout(connectionTimeout);
@@ -134,24 +121,16 @@ app.post('/generate-pairing-code', async (req, res) => {
                 globalSock = sock;
                 isConnecting = false;
                 setupBotCommands(sock);
-                
-                setInterval(() => {
-                    if (sock && !sock.isOnline) {
-                        sock.connect();
-                    }
-                }, 30000);
             }
         });
 
         if (!state.creds.registered) {
             console.log('📱 Demande de code de pairing...');
-            
             try {
                 pairingCode = await sock.requestPairingCode(cleanNumber);
                 
                 if (pairingCode) {
                     pairingCodeCache.set(phoneNumber, pairingCode);
-                    
                     console.log(`✅ Code généré: ${pairingCode} pour ${phoneNumber}`);
                     
                     clearTimeout(connectionTimeout);
@@ -161,7 +140,7 @@ app.post('/generate-pairing-code', async (req, res) => {
                         success: true, 
                         code: pairingCode,
                         message: 'Code généré avec succès',
-                        phoneNumber: phoneNumber,
+                        phoneNumber,
                         expiresIn: 300
                     });
                 }
@@ -172,7 +151,8 @@ app.post('/generate-pairing-code', async (req, res) => {
                 
                 return res.status(500).json({
                     success: false,
-                    error: 'Erreur lors de la génération du code de pairing'
+                    error: error.message || error.toString(),
+                    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
                 });
             }
         } else {
@@ -189,12 +169,13 @@ app.post('/generate-pairing-code', async (req, res) => {
         isConnecting = false;
         res.status(500).json({ 
             success: false, 
-            error: 'Erreur serveur lors de la génération du code',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: error.message || error.toString(),
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
 
+// Vérifier un code déjà généré
 app.get('/pairing-code/:phoneNumber', (req, res) => {
     const { phoneNumber } = req.params;
     const code = pairingCodeCache.get(phoneNumber);
@@ -202,7 +183,7 @@ app.get('/pairing-code/:phoneNumber', (req, res) => {
     if (code) {
         res.json({ 
             success: true, 
-            code: code,
+            code,
             ttl: pairingCodeCache.getTtl(phoneNumber)
         });
     } else {
@@ -213,6 +194,7 @@ app.get('/pairing-code/:phoneNumber', (req, res) => {
     }
 });
 
+// Statut du bot
 app.get('/bot-status', (req, res) => {
     const isConnected = globalSock && globalSock.user;
     res.json({
@@ -227,6 +209,7 @@ app.get('/bot-status', (req, res) => {
     });
 });
 
+// Commandes bot
 function setupBotCommands(sock) {
     sock.ev.on('messages.upsert', async ({ messages }) => {
         try {
@@ -276,9 +259,8 @@ function setupBotCommands(sock) {
                 '!info': () => {
                     return `ℹ️ *Informations du Bot*\n\n` +
                            `🤖 Nom: Ebmau Bot v2.0\n` +
-                           `📱 Plateforme: WhatsApp Business API\n` +
+                           `📱 Plateforme: WhatsApp (Baileys)\n` +
                            `💻 Hébergé sur: Render.com\n` +
-                           `🔗 Connecté via: @whiskeysockets/baileys\n` +
                            `⏰ Uptime: ${Math.floor(process.uptime() / 3600)}h ${Math.floor((process.uptime() % 3600) / 60)}m\n` +
                            `📊 Mémoire: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB\n\n` +
                            `✨ Créé avec ❤️ par Ebmau`;
@@ -321,25 +303,27 @@ function setupBotCommands(sock) {
     });
 }
 
+// Route santé
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         botConnected: !!globalSock,
-        isConnecting: isConnecting,
+        isConnecting,
         environment: process.env.NODE_ENV || 'development',
         nodeVersion: process.version,
         cacheSize: pairingCodeCache.keys().length
     });
 });
 
+// Middleware erreurs
 app.use((error, req, res, next) => {
-    console.error('❌ Erreur serveur:', error);
+    console.error('❌ Erreur middleware:', error);
     res.status(500).json({ 
         success: false, 
-        error: 'Erreur serveur interne',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: error.message || 'Erreur serveur interne',
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
 });
 
@@ -350,28 +334,22 @@ app.use('*', (req, res) => {
     });
 });
 
+// Démarrage serveur
 const server = app.listen(port, () => {
     console.log(`🚀 Serveur Ebmau Bot démarré sur le port ${port}`);
-    console.log(`🌐 Interface accessible sur: http://localhost:${port}`);
-    console.log(`📱 Bot WhatsApp prêt à recevoir des connexions...`);
-    console.log(`🔧 Environnement: ${process.env.NODE_ENV || 'development'}`);
 });
 
+// Arrêt propre
 const gracefulShutdown = (signal) => {
     console.log(`\n🔄 Signal ${signal} reçu. Arrêt en cours...`);
-    
     server.close(() => {
         console.log('📡 Serveur HTTP fermé');
-        
         if (globalSock) {
             console.log('🤖 Fermeture de la connexion WhatsApp...');
             globalSock.end();
         }
-        
-        console.log('✅ Arrêt propre terminé');
         process.exit(0);
     });
-    
     setTimeout(() => {
         console.log('⚠️ Arrêt forcé après timeout');
         process.exit(1);
