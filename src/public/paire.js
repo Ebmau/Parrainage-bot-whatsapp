@@ -1,15 +1,19 @@
+// ==========================
 // Variables globales
+// ==========================
 let generatedCode = '';
 let totalCodesGenerated = parseInt(localStorage.getItem('totalCodes') || '0');
 let isGenerating = false;
 let lastGeneration = 0;
 
+// ==========================
 // Initialisation
+// ==========================
 document.addEventListener('DOMContentLoaded', function() {
     updateStats();
     setupEventListeners();
     checkBotStatus();
-    
+
     // Animation d'entrée du logo
     setTimeout(() => {
         const logo = document.getElementById('logo');
@@ -22,63 +26,66 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
 });
 
+// ==========================
+// Gestion des événements
+// ==========================
 function setupEventListeners() {
     const phoneInput = document.getElementById('phoneNumber');
     const generateBtn = document.getElementById('generateBtn');
     const copyBtn = document.getElementById('copyBtn');
-    
+
     if (phoneInput) {
-        // Formatage en temps réel
         phoneInput.addEventListener('input', function(e) {
             formatPhoneNumber(e.target);
             validatePhoneNumber(e.target.value);
         });
 
-        // Validation à la perte de focus
         phoneInput.addEventListener('blur', function(e) {
             validatePhoneNumber(e.target.value);
         });
 
-        // Génération avec Enter
         phoneInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !isGenerating) {
                 generatePairCode();
             }
         });
     }
-    
+
     if (generateBtn) {
         generateBtn.addEventListener('click', generatePairCode);
     }
-    
+
     if (copyBtn) {
         copyBtn.addEventListener('click', copyCode);
     }
 }
 
+// ==========================
+// Helpers validation
+// ==========================
 function formatPhoneNumber(input) {
     let value = input.value.replace(/[^\d+]/g, '');
-    
+
     if (value && !value.startsWith('+')) {
         value = '+' + value;
     }
-    
+
     if (value.length > 15) {
         value = value.substring(0, 15);
     }
-    
+
     input.value = value;
 }
 
 function validatePhoneNumber(phoneNumber) {
     const phoneInput = document.getElementById('phoneNumber');
     const errorMessage = document.getElementById('errorMessage');
-    
+
     if (!errorMessage) return true;
-    
+
     const phoneRegex = /^\+[1-9]\d{1,14}$/;
     const isValid = phoneRegex.test(phoneNumber);
-    
+
     if (phoneNumber.length > 0 && !isValid) {
         phoneInput.classList.add('error');
         errorMessage.style.display = 'block';
@@ -91,127 +98,123 @@ function validatePhoneNumber(phoneNumber) {
     }
 }
 
+// ==========================
+// Génération du code
+// ==========================
 async function generatePairCode() {
     if (isGenerating) return;
-    
-    // Protection anti-spam
+
     const now = Date.now();
     if (now - lastGeneration < 5000) {
         showError('Veuillez attendre 5 secondes entre chaque génération');
         return;
     }
-    
+
     const phoneNumber = document.getElementById('phoneNumber').value.trim();
     const codeDisplay = document.getElementById('codeDisplay');
     const copyBtn = document.getElementById('copyBtn');
     const generateBtn = document.getElementById('generateBtn');
     const progressBar = document.getElementById('progressBar');
     const progressFill = document.getElementById('progressFill');
-    
-    // Validation
+
     if (!phoneNumber) {
         showError('Veuillez entrer votre numéro de téléphone');
         document.getElementById('phoneNumber').focus();
         return;
     }
-    
+
     if (!validatePhoneNumber(phoneNumber)) {
         showError('Format de numéro invalide');
         return;
     }
-    
-    // Début de génération
+
+    // Lancement
     isGenerating = true;
     lastGeneration = now;
     generateBtn.disabled = true;
     generateBtn.innerHTML = '<div class="loading"></div> Génération en cours...';
-    
+
     if (copyBtn) copyBtn.classList.add('hidden');
-    
+
     if (progressBar) {
         progressBar.style.display = 'block';
-        // Animation de progression
         let progress = 0;
         const progressInterval = setInterval(() => {
             progress += Math.random() * 10;
             if (progress > 85) progress = 85;
             if (progressFill) progressFill.style.width = progress + '%';
         }, 150);
-        
-        // Étapes de génération avec le serveur
+
         codeDisplay.innerHTML = '<div class="loading"></div> Connexion au serveur...';
-        
+
         try {
             await sleep(500);
             codeDisplay.innerHTML = '<div class="loading"></div> Initialisation du bot...';
-            
+
             await sleep(800);
             codeDisplay.innerHTML = '<div class="loading"></div> Génération du code sécurisé...';
-            
-            // Appel API vers le serveur
+
+            // Appel API
             const response = await fetch('/generate-pairing-code', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ phoneNumber: phoneNumber })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber })
             });
-            
+
             const data = await response.json();
-            
-            // Finalisation de la barre de progression
+
             clearInterval(progressInterval);
             if (progressFill) progressFill.style.width = '100%';
-            
+
             if (data.success && data.code) {
                 generatedCode = data.code;
-                
+
                 setTimeout(() => {
                     codeDisplay.textContent = generatedCode;
                     codeDisplay.classList.add('has-code');
                     if (copyBtn) copyBtn.classList.remove('hidden');
-                    
-                    // Mise à jour des statistiques
+
                     totalCodesGenerated++;
                     localStorage.setItem('totalCodes', totalCodesGenerated.toString());
                     updateStats();
-                    
+
                     showSuccess(`Code généré avec succès pour ${data.phoneNumber}! Validité: 5 minutes`);
-                    
                     generateBtn.innerHTML = '🤖 Générer un nouveau code';
-                    
+
                     setTimeout(() => {
                         if (progressBar) progressBar.style.display = 'none';
                         if (progressFill) progressFill.style.width = '0%';
                     }, 1000);
-                    
                 }, 800);
-                
+
             } else {
-                throw new Error(data.error || 'Erreur lors de la génération');
+                throw new Error(data.error || 'Erreur lors de la génération du code');
             }
-            
+
         } catch (error) {
             clearInterval(progressInterval);
-            console.error('Erreur:', error);
-            
-            let errorMessage = 'Erreur de connexion au serveur';
-            if (error.message.includes('429')) {
-                errorMessage = 'Trop de tentatives. Attendez 30 secondes.';
-            } else if (error.message.includes('400')) {
-                errorMessage = 'Numéro de téléphone invalide';
-            } else if (error.message.includes('503')) {
-                errorMessage = 'Service temporairement indisponible';
+            console.error('❌ Erreur frontend:', error);
+
+            let errorMessage = error.message || 'Erreur de connexion au serveur';
+
+            // Mapping des codes
+            if (errorMessage.includes('429')) {
+                errorMessage = '⏱ Trop de tentatives. Attendez 30 secondes.';
+            } else if (errorMessage.includes('400')) {
+                errorMessage = '❌ Numéro de téléphone invalide';
+            } else if (errorMessage.includes('503')) {
+                errorMessage = '⚠️ Service temporairement indisponible';
             }
-            
+
             codeDisplay.innerHTML = `❌ ${errorMessage}`;
             generateBtn.innerHTML = '🤖 Réessayer';
             showError(errorMessage);
-            
+
             setTimeout(() => {
                 if (progressBar) progressBar.style.display = 'none';
                 if (progressFill) progressFill.style.width = '0%';
             }, 1000);
+
         } finally {
             generateBtn.disabled = false;
             isGenerating = false;
@@ -219,29 +222,31 @@ async function generatePairCode() {
     }
 }
 
+// ==========================
+// Copier le code
+// ==========================
 async function copyCode() {
     if (!generatedCode) {
         showError('Aucun code à copier');
         return;
     }
-    
+
     const copyBtn = document.getElementById('copyBtn');
     if (!copyBtn) return;
-    
+
     const originalText = copyBtn.innerHTML;
-    
+
     try {
         await navigator.clipboard.writeText(generatedCode);
         copyBtn.innerHTML = '✅ Code copié !';
         copyBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
-        
+
         setTimeout(() => {
             copyBtn.innerHTML = originalText;
             copyBtn.style.background = '';
         }, 2500);
-        
-    } catch (err) {
-        // Fallback pour navigateurs anciens
+
+    } catch {
         const textArea = document.createElement('textarea');
         textArea.value = generatedCode;
         textArea.style.position = 'fixed';
@@ -250,7 +255,7 @@ async function copyCode() {
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        
+
         copyBtn.innerHTML = '✅ Code copié !';
         setTimeout(() => {
             copyBtn.innerHTML = originalText;
@@ -258,19 +263,19 @@ async function copyCode() {
     }
 }
 
+// ==========================
+// Vérifier le statut du bot
+// ==========================
 async function checkBotStatus() {
     try {
         const response = await fetch('/bot-status');
         const data = await response.json();
-        
+
         console.log('Bot status:', data);
-        
-        // Afficher l'état de connexion du bot
+
         const existingStatus = document.querySelector('.bot-status');
-        if (existingStatus) {
-            existingStatus.remove();
-        }
-        
+        if (existingStatus) existingStatus.remove();
+
         const statusDiv = document.createElement('div');
         statusDiv.className = 'bot-status';
         statusDiv.innerHTML = data.connected 
@@ -278,17 +283,18 @@ async function checkBotStatus() {
             : data.connecting 
                 ? '🟡 Bot en cours de connexion...'
                 : '🔴 Bot en attente de connexion';
-            
-        // Insérer après les stats
+
         const stats = document.querySelector('.stats');
-        if (stats) {
-            stats.insertAdjacentElement('afterend', statusDiv);
-        }
+        if (stats) stats.insertAdjacentElement('afterend', statusDiv);
+
     } catch (error) {
         console.log('Impossible de vérifier le statut du bot:', error);
     }
 }
 
+// ==========================
+// Stats & Animations
+// ==========================
 function updateStats() {
     const totalCodesElement = document.getElementById('totalCodes');
     if (totalCodesElement) {
@@ -300,12 +306,12 @@ function updateStats() {
 function animateNumber(elementId, targetValue) {
     const element = document.getElementById(elementId);
     if (!element) return;
-    
+
     const startValue = parseInt(element.textContent) || 0;
     const duration = 1000;
     const steps = 30;
     const increment = (targetValue - startValue) / steps;
-    
+
     let current = startValue;
     const timer = setInterval(() => {
         current += increment;
@@ -317,12 +323,12 @@ function animateNumber(elementId, targetValue) {
     }, duration / steps);
 }
 
+// ==========================
+// Notifications
+// ==========================
 function showError(message) {
-    if (navigator.vibrate) {
-        navigator.vibrate([100, 50, 100]);
-    }
-    
-    // Créer une notification d'erreur personnalisée
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-notification';
     errorDiv.innerHTML = `❌ ${message}`;
@@ -340,58 +346,55 @@ function showError(message) {
         max-width: 300px;
         word-wrap: break-word;
     `;
-    
+
     document.body.appendChild(errorDiv);
-    
+
     setTimeout(() => {
         errorDiv.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => {
-            if (errorDiv.parentNode) {
-                errorDiv.parentNode.removeChild(errorDiv);
-            }
-        }, 300);
+        setTimeout(() => errorDiv.remove(), 300);
     }, 5000);
 }
 
 function showSuccess(message) {
     const container = document.querySelector('.container');
     if (!container) return;
-    
+
     const existingSuccess = document.querySelector('.success-message');
-    if (existingSuccess) {
-        existingSuccess.remove();
-    }
-    
+    if (existingSuccess) existingSuccess.remove();
+
     const successDiv = document.createElement('div');
     successDiv.className = 'success-message';
     successDiv.innerHTML = '✅ ' + message;
-    
+
     container.insertBefore(successDiv, document.getElementById('codeDisplay'));
-    
+
     setTimeout(() => {
         if (successDiv.parentNode) {
-            successDiv.parentNode.removeChild(successDiv);
+            successDiv.remove();
         }
     }, 6000);
 }
 
+// ==========================
+// Utils
+// ==========================
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Ajouter les styles pour les notifications
+// ==========================
+// Styles dynamiques
+// ==========================
 const style = document.createElement('style');
 style.textContent = `
     @keyframes slideInRight {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
     }
-    
     @keyframes slideOutRight {
         from { transform: translateX(0); opacity: 1; }
         to { transform: translateX(100%); opacity: 0; }
     }
-    
     .bot-status {
         text-align: center;
         padding: 10px;
@@ -402,7 +405,6 @@ style.textContent = `
         background: rgba(255, 255, 255, 0.8);
         border: 1px solid var(--border-color, #e0e0e0);
     }
-    
     .loading {
         display: inline-block;
         width: 20px;
@@ -414,12 +416,10 @@ style.textContent = `
         margin-right: 8px;
         vertical-align: middle;
     }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+    @keyframes spin { 
+        0% { transform: rotate(0deg); } 
+        100% { transform: rotate(360deg); } 
     }
-    
     .success-message {
         background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
         color: var(--success-color, #28a745);
@@ -430,7 +430,6 @@ style.textContent = `
         animation: slideIn 0.5s ease;
         font-size: 14px;
     }
-    
     @keyframes slideIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -438,5 +437,6 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Debug: Log quand le script se charge
-console.log('🚀 Ebmau Bot - Script JavaScript chargé avec succès!');
+// Debug
+console.log('🚀 Ebmau Bot - Script pair.js chargé avec succès!');
+
