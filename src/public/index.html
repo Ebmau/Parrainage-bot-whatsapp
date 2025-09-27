@@ -20,9 +20,30 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Ebmau Bot">
 
-  <!-- ⚡ Ton CSS inline reste inchangé -->
   <style>
-    /* styles existants inchangés */
+    /* Exemple de style minimal, à compléter avec tes propres styles */
+    body { background: #f8f9fa; font-family: 'Segoe UI', Arial, sans-serif; }
+    .container { max-width: 400px; margin: 30px auto; background: #fff; box-shadow: 0 2px 12px #0001; border-radius: 12px; padding: 20px; }
+    .logo { font-size: 64px; text-align: center; }
+    h1 { text-align: center; color: #25D366; margin-top: 0; }
+    .subtitle { text-align: center; color: #555; }
+    .inspiration { text-align: center; font-size: 13px; color: #aaa; }
+    .stats { display: flex; justify-content: space-around; margin: 20px 0; }
+    .stat-item { text-align: center; }
+    .stat-number { font-weight: bold; font-size: 22px; color: #25D366; }
+    .input-group { margin-bottom: 18px; }
+    .input-label { font-weight: 500; display: block; margin-bottom: 7px; }
+    .phone-input { width: 100%; padding: 10px; font-size: 17px; border: 1px solid #ccc; border-radius: 8px; }
+    .error-message { color: #dc3545; display: none; margin-top: 5px; font-size: 13px; }
+    .btn, .btn-secondary { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; border-radius: 8px; border: none; background: #25D366; color: #fff; cursor: pointer; font-weight: 500; }
+    .btn-secondary { background: #eee; color: #25D366; border: 1px solid #25D366; }
+    .hidden { display: none !important; }
+    .progress-bar { display: none; background: #eee; height: 6px; border-radius: 4px; margin: 8px 0; overflow: hidden; }
+    .progress-fill { background: #25D366; height: 100%; width: 0%; transition: width 0.2s; }
+    .code-display { background: #f4f4f4; border-radius: 8px; padding: 15px; margin: 10px 0; text-align: center; color: #444; font-size: 17px; }
+    .footer { text-align: center; font-size: 13px; color: #aaa; margin-top: 25px; }
+    .version { font-size: 11px; }
+    .info-message { color: #25D366; background: #e9fef7; border-radius: 8px; padding: 8px; text-align: center; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -52,7 +73,7 @@
         class="phone-input" 
         id="phoneNumber" 
         placeholder="+243xxxxxxxxx"
-        maxlength="17" <!-- ⚡ augmenté pour plus de sécurité -->
+        maxlength="17"
         autocomplete="tel"
       >
       <div class="error-message" id="errorMessage">Format invalide</div>
@@ -74,6 +95,17 @@
       📋 Copier le code
     </button>
 
+    <!-- Parrainage -->
+    <button class="btn" id="referralBtn">
+      🧑‍🤝‍🧑 Générer mon lien de parrainage
+    </button>
+    <div class="code-display hidden" id="referralLinkDisplay">
+      Ton lien de parrainage apparaîtra ici
+    </div>
+    <button class="btn btn-secondary hidden" id="copyReferralBtn">
+      📋 Copier le lien de parrainage
+    </button>
+
     <!-- Nouveau conteneur global erreurs -->
     <div id="globalErrorContainer"></div>
 
@@ -83,8 +115,6 @@
     </div>
   </div>
 
-  <!-- ⚡ Correction du chemin -->
   <script src="/pair.js"></script>
 </body>
 </html>
-
